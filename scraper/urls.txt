@@ -1,0 +1,11 @@
+# Add one URL per line below (video URLs only)
+# Lines starting with # are ignored
+# Run with: node scrape.js file urls.txt
+
+# Example JAV URLs:
+# https://www.xvideos.com/video12345/example_title
+
+# Example FC2 URLs:
+# https://adult.contents.fc2.com/article/3928471/
+
+# Paste your video URLs below:

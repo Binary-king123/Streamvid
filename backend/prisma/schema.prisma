@@ -1,0 +1,118 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Genre {
+  id      String  @id @default(uuid())
+  name    String  @unique
+  slug    String  @unique
+  isAdult Boolean @default(false) @map("is_adult")
+  videos  Video[]
+
+  @@map("genres")
+}
+
+model Tag {
+  id     String      @id @default(uuid())
+  name   String      @unique
+  slug   String      @unique
+  videos VideoTag[]
+
+  @@map("tags")
+}
+
+model Actor {
+  id        String       @id @default(uuid())
+  name      String       @unique
+  slug      String       @unique
+  photoUrl  String?      @map("photo_url")
+  videos    VideoActor[]
+
+  @@map("actors")
+}
+
+model Video {
+  id              String   @id @default(uuid())
+  code            String?  @unique          // e.g. "SSIS-001", "FC2-PPV-3000000"
+  title           String
+  description     String?
+  genreId         String   @map("genre_id")
+  genre           Genre    @relation(fields: [genreId], references: [id])
+  durationSeconds Int      @default(0) @map("duration_seconds")
+  status          String   @default("processing") // processing | ready | failed
+  isAdult         Boolean  @default(false) @map("is_adult")
+  hlsPath         String?  @map("hls_path")
+  thumbnailPath   String?  @map("thumbnail_path")
+  previewPath     String?  @map("preview_path")
+  viewsCount      BigInt   @default(0) @map("views_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tags      VideoTag[]
+  actors    VideoActor[]
+  analytics AnalyticsDaily[]
+
+  @@index([genreId])
+  @@index([isAdult])
+  @@index([status])
+  @@index([viewsCount(sort: Desc)])
+  @@map("videos")
+}
+
+model VideoTag {
+  videoId String @map("video_id")
+  tagId   String @map("tag_id")
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
+  @@map("video_tags")
+}
+
+model VideoActor {
+  videoId String @map("video_id")
+  actorId String @map("actor_id")
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  actor   Actor  @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, actorId])
+  @@map("video_actors")
+}
+
+model AnalyticsDaily {
+  videoId String   @map("video_id")
+  video   Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  date    DateTime @db.Date
+  views   Int      @default(0)
+
+  @@id([videoId, date])
+  @@map("analytics_daily")
+}
+
+model PlatformAd {
+  id             String   @id @default(uuid())
+  siteMode       String   @default("mainstream") @map("site_mode")
+  preRollVast    String?  @map("pre_roll_vast")
+  sidebarBanner  String?  @map("sidebar_banner")
+  topBanner      String?  @map("top_banner")
+  inlineBanner   String?  @map("inline_banner")
+  footerBanner   String?  @map("footer_banner")
+  popunderScript String?  @map("popunder_script")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_ads")
+}
