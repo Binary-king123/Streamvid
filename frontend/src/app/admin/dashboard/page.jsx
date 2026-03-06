@@ -133,8 +133,8 @@ function TabFileUpload({ genres }) {
         if (!fileRef.current?.files[0]) return setMsg('Select a file first')
         setMsg('')
         const fd = new FormData()
-        fd.append('file', fileRef.current.files[0])
         Object.entries(form).forEach(([k, v]) => fd.append(k, v))
+        fd.append('file', fileRef.current.files[0])
         try {
             await xhrUpload(`${API}/api/admin/videos/upload`, fd, setProgress)
             setMsg('✅ Upload complete! Processing in background...')
