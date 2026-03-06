@@ -29,6 +29,17 @@ export default function VideoPlayer({ video }) {
             })
             hls.loadSource(src)
             hls.attachMedia(el)
+
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                // Browsers block unmuted autoplay, capture the promise to prevent console errors
+                const playPromise = el.play()
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('Autoplay prevented by browser, waiting for user interaction.')
+                    })
+                }
+            })
+
             return () => hls.destroy()
         } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
             el.src = src
