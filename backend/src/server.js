@@ -14,6 +14,9 @@ import { adRoutes } from './routes/ads.js'
 
 dotenv.config()
 
+// Globally polyfill BigInt serialization for Fastify's JSON stringifier
+BigInt.prototype.toJSON = function () { return this.toString() }
+
 const isProd = process.env.NODE_ENV === 'production'
 
 const server = Fastify({
