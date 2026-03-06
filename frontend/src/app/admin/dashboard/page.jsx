@@ -91,7 +91,7 @@ function TabVideos({ genres }) {
                                 <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{v.genre?.name}</td>
                                 <td style={{ padding: '8px 10px' }}>
                                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                                        {v.tags?.slice(0, 3).map(vt => (
+                                        {v.tags?.slice(0, 3)?.map(vt => (
                                             <span key={vt.tag.id} style={{ fontSize: 10, background: 'rgba(124,58,237,0.15)', color: 'var(--accent)', padding: '2px 5px', borderRadius: 3 }}>
                                                 {vt.tag.name}
                                             </span>
@@ -118,7 +118,7 @@ function TabVideos({ genres }) {
                 <span style={{ color: 'var(--text-muted)', lineHeight: '32px', fontSize: 12 }}>Page {page}</span>
                 <button className="btn-secondary" disabled={videos.length < 20} onClick={() => setPage(p => p + 1)} style={{ padding: '6px 14px', fontSize: 12 }}>Next →</button>
             </div>
-        </div>
+        </div >
     )
 }
 
@@ -496,7 +496,7 @@ export default function AdminDashboard() {
                         <h2 style={{ fontSize: 15, marginTop: 24 }}>Daily Traffic</h2>
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 80 }}>
                             {analytics.dailyTraffic?.map((d, i) => {
-                                const max = Math.max(...analytics.dailyTraffic.map(x => x._sum.views || 0), 1)
+                                const max = Math.max(...(analytics.dailyTraffic?.map(x => x._sum.views || 0) || [1]))
                                 return <div key={i} style={{ flex: 1, background: 'var(--accent)', borderRadius: '2px 2px 0 0', height: `${Math.max(4, ((d._sum.views || 0) / max) * 100)}%`, opacity: 0.75 }} title={`${d._sum.views} views`} />
                             })}
                         </div>
