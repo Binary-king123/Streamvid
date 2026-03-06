@@ -2,9 +2,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import AgeGateWrapper from '@/components/AgeGateWrapper'
-import dynamic from 'next/dynamic'
-
-const AdLoader = dynamic(() => import('@/components/AdLoader'), { ssr: false })
+import AdLoaderWrapper from '@/components/AdLoaderWrapper'
 
 
 const inter = Inter({ subsets: ['latin'] })
@@ -84,7 +82,8 @@ export default function RootLayout({ children }) {
             </head>
             <body className={inter.className}>
                 <AgeGateWrapper isAdultSite={isAdultSite}>
-                    <AdLoader />
+                    <AdLoaderWrapper />
+
                     <Navbar siteName={SITE_NAME} isAdultSite={isAdultSite} />
                     <main style={{ minHeight: 'calc(100vh - 60px)' }}>
                         {children}
