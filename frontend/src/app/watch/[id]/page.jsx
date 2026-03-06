@@ -81,8 +81,10 @@ async function VideoSchema({ id }) {
             duration: video.durationSeconds
                 ? `PT${Math.floor(video.durationSeconds / 60)}M${video.durationSeconds % 60}S`
                 : undefined,
+            // contentUrl = direct video file (HLS only for self-hosted)
             contentUrl: video.hlsPath ? `${DOMAIN}${video.hlsPath}` : undefined,
-            embedUrl: `${DOMAIN}/watch/${video.id}`,
+            // embedUrl = the actual player iframe URL (YouTube/external or our own watch page)
+            embedUrl: video.embedUrl || `${DOMAIN}/watch/${video.id}`,
             publisher: {
                 '@type': 'Organization',
                 name: SITE_NAME,

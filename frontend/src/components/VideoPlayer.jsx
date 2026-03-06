@@ -89,16 +89,47 @@ export default function VideoPlayer({ video }) {
             {/* Ad network JS injects into this div BEFORE video plays */}
             <div id="preroll-ad-container" style={{ width: '100%' }} />
 
-            {/* ─── HLS Video Player ───────────────────────────── */}
-            <video
-                ref={videoRef}
-                controls
-                playsInline
-                autoPlay
-                style={{ width: '100%', display: 'block', aspectRatio: '16/9' }}
-                poster={videoUrl(video?.thumbnailPath)}
-                crossOrigin="anonymous"
-            />
+            {/* ─── Video Player (Iframe OR HLS) ───────────────────────────── */}
+            {video?.embedUrl ? (
+                // OPTION 1: Third-Party Iframe Embed (zero hosting cost)
+                <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
+                    <iframe
+                        src={video.embedUrl}
+                        frameBorder="0"
+                        allowFullScreen
+                        scrolling="no"
+                        loading="lazy"
+                        style={{
+                            position: 'absolute', top: 0, left: 0,
+                            width: '100%', height: '100%'
+                        }}
+                    ></iframe>
+                    {/* Invisible overlay to capture the first click for Pop-unders while letting subsequent clicks pass to iframe */}
+                    {!viewRecorded && (
+                        <div
+                            style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: 'pointer' }}
+                            onClick={() => {
+                                // Record view on first interaction
+                                trackVideoView(video.id, 5);
+                                setViewRecorded(true);
+                                // The first click gets captured here. 
+                                // In production, ExoClick/TrafficJunky script handles the pop-under on ANY body click.
+                            }}
+                        />
+                    )}
+                </div>
+            ) : (
+                // OPTION 2: Self-hosted HLS Stream
+                <video
+                    ref={videoRef}
+                    controls
+                    playsInline
+                    autoPlay
+                    style={{ width: '100%', display: 'block', aspectRatio: '16/9' }}
+                    poster={videoUrl(video?.thumbnailPath)}
+                    crossOrigin="anonymous"
+                />
+            )}
 
             {/* ─── View Badge (debug — remove in prod if desired) ─ */}
             {viewRecorded && (

@@ -264,6 +264,96 @@ function TabUrlImport({ genres }) {
     )
 }
 
+function TabEmbedImport({ genres }) {
+    const [mode, setMode] = useState('single')
+    const [loading, setLoading] = useState(false)
+    const [msg, setMsg] = useState('')
+    const [form, setForm] = useState({ title: '', embedUrl: '', thumbnailUrl: '', genreName: '', duration: '', tags: '', actors: '', isAdult: false })
+    const [bulkText, setBulkText] = useState('')
+
+    async function submitSingle(e) {
+        e.preventDefault()
+        setLoading(true); setMsg('')
+        try {
+            const r = await api.embedVideo({
+                ...form,
+                tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+                actors: form.actors.split(',').map(a => a.trim()).filter(Boolean)
+            })
+            setMsg(`✅ Published! Video ID: ${r.id}`)
+            setForm({ title: '', embedUrl: '', thumbnailUrl: '', genreName: '', duration: '', tags: '', actors: '', isAdult: false })
+        } catch (err) { setMsg(`❌ ${err.message}`) }
+        setLoading(false)
+    }
+
+    async function submitBulk(e) {
+        e.preventDefault()
+        if (!bulkText.trim()) return
+        setLoading(true); setMsg('')
+        try {
+            let rows = []
+            if (mode === 'json') {
+                rows = JSON.parse(bulkText)
+            } else if (mode === 'csv') {
+                const lines = bulkText.trim().split('\n').filter(Boolean)
+                const headers = lines[0].split(',').map(h => h.trim())
+                rows = lines.slice(1).map(line => {
+                    const vals = line.split(',')
+                    return Object.fromEntries(headers.map((h, i) => [h, (vals[i] || '').trim()]))
+                })
+            }
+            if (rows.length > 100) throw new Error('Max 100 videos per request')
+            const r = await api.bulkEmbedVideos(rows)
+            setMsg(`✅ Imported: ${r.imported} | Errors: ${r.errors}`)
+            if (r.errors === 0) setBulkText('')
+        } catch (err) { setMsg(`❌ ${err.message}`) }
+        setLoading(false)
+    }
+
+    return (
+        <div style={{ maxWidth: 760 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                {['single', 'json', 'csv'].map(m => (
+                    <button key={m} type="button" onClick={() => { setMode(m); setMsg(''); setBulkText('') }} style={tabStyle(mode === m)}>
+                        {m === 'single' ? '✏️ Single Form' : m === 'json' ? '{ } JSON Paste' : '📝 CSV Paste'}
+                    </button>
+                ))}
+            </div>
+            {msg && <div style={{ padding: '8px 12px', borderRadius: 6, background: msg.startsWith('✅') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: msg.startsWith('✅') ? 'var(--success)' : 'var(--danger)', fontSize: 13, marginBottom: 16 }}>{msg}</div>}
+            {mode === 'single' && (
+                <form onSubmit={submitSingle} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>TITLE *</label><input style={inputStyle} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required /></div>
+                        <div><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>EMBED URL *</label><input style={inputStyle} value={form.embedUrl} onChange={e => setForm(f => ({ ...f, embedUrl: e.target.value }))} required /></div>
+                        <div><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>THUMBNAIL URL</label><input style={inputStyle} value={form.thumbnailUrl} onChange={e => setForm(f => ({ ...f, thumbnailUrl: e.target.value }))} /></div>
+                        <div>
+                            <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>GENRE (Name) *</label>
+                            <input style={inputStyle} placeholder="e.g. Action" value={form.genreName} onChange={e => setForm(f => ({ ...f, genreName: e.target.value }))} required list="genre-list" />
+                            <datalist id="genre-list">{genres.map(g => <option key={g.id} value={g.name} />)}</datalist>
+                        </div>
+                        <div><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>DURATION (Seconds)</label><input type="number" style={inputStyle} value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} /></div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
+                            <label style={{ display: 'flex', gap: 8, cursor: 'pointer', fontSize: 13 }}><input type="checkbox" checked={form.isAdult} onChange={e => setForm(f => ({ ...f, isAdult: e.target.checked }))} /> 🔞 Adult</label>
+                        </div>
+                    </div>
+                    <div><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>TAGS (comma sep)</label><input style={inputStyle} value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} /></div>
+                    <div><label style={{ fontSize: 11, color: 'var(--text-muted)' }}>ACTORS (comma sep)</label><input style={inputStyle} value={form.actors} onChange={e => setForm(f => ({ ...f, actors: e.target.value }))} /></div>
+                    <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Publishing...' : '🚀 Publish Instantly'}</button>
+                </form>
+            )}
+            {(mode === 'json' || mode === 'csv') && (
+                <form onSubmit={submitBulk} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {mode === 'json' ? 'Format: [{ "title": "...", "embedUrl": "...", "genreName": "..." }]' : 'Headers: title,embedUrl,thumbnailUrl,genreName,duration,tags,actors,isAdult'}
+                    </div>
+                    <textarea style={{ ...inputStyle, fontFamily: 'monospace', fontSize: 11, resize: 'vertical' }} rows={12} value={bulkText} onChange={e => setBulkText(e.target.value)} required />
+                    <button type="submit" className="btn-primary" disabled={loading} style={{ width: 'fit-content' }}>{loading ? 'Processing...' : '🚀 Bulk Import Embeds'}</button>
+                </form>
+            )}
+        </div>
+    )
+}
+
 function TabBatchImport({ genres }) {
     const [csv, setCsv] = useState('')
     const [loading, setLoading] = useState(false)
@@ -428,6 +518,7 @@ export default function AdminDashboard() {
         { id: 'videos', label: '🎬 Videos' },
         { id: 'upload', label: '⬆ File Upload' },
         { id: 'urlimport', label: '🔗 URL Import' },
+        { id: 'embed', label: '⚡ Embed Import' },
         { id: 'batch', label: '🚀 Batch CSV' },
         { id: 'taxonomy', label: '🏷 Genres/Tags' },
         { id: 'analytics', label: '📊 Analytics' },
@@ -479,6 +570,7 @@ export default function AdminDashboard() {
                 {tab === 'videos' && <TabVideos genres={genres} />}
                 {tab === 'upload' && <TabFileUpload genres={genres} />}
                 {tab === 'urlimport' && <TabUrlImport genres={genres} />}
+                {tab === 'embed' && <TabEmbedImport genres={genres} />}
                 {tab === 'batch' && <TabBatchImport genres={genres} />}
                 {tab === 'taxonomy' && <TabTaxonomy genres={genres} reload={loadGenres} />}
 

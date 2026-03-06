@@ -167,7 +167,7 @@ export async function adminRoutes(fastify) {
     })
 
     // ============================================================
-    // BATCH CSV IMPORT — Multiple videos at once
+    // BATCH CSV IMPORT — Multiple videos at once (DOWNLOAD based)
     // Format: URL,title,genre_name,code,tags(;sep),actors(;sep),isAdult(true/false)
     // ============================================================
     fastify.post('/videos/batch-import', opts, async (request, reply) => {
@@ -223,6 +223,107 @@ export async function adminRoutes(fastify) {
 
         await invalidate('videos:home:*')
         reply.send({ queued: results.length, errors: errors.length, results, errors })
+    })
+
+    // ============================================================
+    // SINGLE EMBED — Zero Encoding Publish
+    // ============================================================
+    fastify.post('/videos/embed', opts, async (request, reply) => {
+        const { title, embedUrl, thumbnailUrl, genreName, duration, tags, actors, isAdult, description, code } = request.body
+
+        if (!title || !embedUrl || !genreName) {
+            return reply.code(400).send({ error: 'title, embedUrl, and genreName required' })
+        }
+
+        const genre = await findOrCreateGenre(genreName)
+        const [tagRecords, actorRecords] = await Promise.all([
+            findOrCreateTags(tags || []),
+            findOrCreateActors(actors || [])
+        ])
+
+        const video = await prisma.video.create({
+            data: {
+                title,
+                description,
+                embedUrl,
+                thumbnailPath: thumbnailUrl || null,
+                genreId: genre.id,
+                durationSeconds: parseInt(duration) || 0,
+                isAdult: Boolean(isAdult),
+                code: code || null,
+                status: 'ready', // INSTANT PUBLISH
+                tags: tagRecords.length ? { create: tagRecords.map(t => ({ tagId: t.id })) } : undefined,
+                actors: actorRecords.length ? { create: actorRecords.map(a => ({ actorId: a.id })) } : undefined
+            }
+        })
+
+        await invalidate('videos:home:*')
+        reply.send({ id: video.id, status: 'ready' })
+    })
+
+    // ============================================================
+    // BULK EMBED — Batch Zero Encoding Publish (Max 100)
+    // ============================================================
+    fastify.post('/videos/bulk-embed', opts, async (request, reply) => {
+        const rows = request.body
+        if (!Array.isArray(rows) || rows.length === 0) {
+            return reply.code(400).send({ error: 'Array of embed videos required' })
+        }
+        if (rows.length > 100) {
+            return reply.code(400).send({ error: 'Max 100 per request for bulk embed' })
+        }
+
+        let imported = 0
+        let skipped = 0
+        let errors = 0
+        const errorList = []
+
+        for (const row of rows) {
+            try {
+                // Support both direct tags array or semicolon/comma separated string
+                const rowTags = Array.isArray(row.tags) ? row.tags : (row.tags || '').split(/[;,]/).filter(Boolean)
+                const rowActors = Array.isArray(row.actors) ? row.actors : (row.actors || '').split(/[;,]/).filter(Boolean)
+
+                const { title, embedUrl, thumbnailUrl, genreName, duration, isAdult, description, code } = row
+
+                if (!title || !embedUrl || !genreName) {
+                    throw new Error('Missing title, embedUrl, or genreName')
+                }
+
+                // ── Dedup check: skip if embedUrl already exists ──────────────
+                const existing = await prisma.video.findFirst({ where: { embedUrl }, select: { id: true } })
+                if (existing) { skipped++; continue }
+
+                const genre = await findOrCreateGenre(genreName)
+                const [tagRecords, actorRecords] = await Promise.all([
+                    findOrCreateTags(rowTags),
+                    findOrCreateActors(rowActors)
+                ])
+
+                await prisma.video.create({
+                    data: {
+                        title,
+                        description: description || null,
+                        embedUrl,
+                        thumbnailPath: thumbnailUrl || null,
+                        genreId: genre.id,
+                        durationSeconds: parseInt(duration) || 0,
+                        isAdult: Boolean(isAdult),
+                        code: code || null,
+                        status: 'ready',
+                        tags: tagRecords.length ? { create: tagRecords.map(t => ({ tagId: t.id })) } : undefined,
+                        actors: actorRecords.length ? { create: actorRecords.map(a => ({ actorId: a.id })) } : undefined
+                    }
+                })
+                imported++
+            } catch (err) {
+                errors++
+                errorList.push({ title: row.title, error: err.message })
+            }
+        }
+
+        await invalidate('videos:home:*')
+        reply.send({ imported, skipped, errors, errorList })
     })
 
     // ============================================================

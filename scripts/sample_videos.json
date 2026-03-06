@@ -1,0 +1,48 @@
+[
+    {
+        "title": "Amazing Mountain Biking",
+        "embedUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        "thumbnailUrl": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        "genreName": "Sports",
+        "duration": 210,
+        "tags": [
+            "biking",
+            "extreme",
+            "mountains"
+        ],
+        "actors": [
+            "John Doe"
+        ],
+        "isAdult": false
+    },
+    {
+        "title": "Deep Ocean Discovery",
+        "embedUrl": "https://player.vimeo.com/video/123456789",
+        "thumbnailUrl": "https://example.com/ocean.jpg",
+        "genreName": "Documentary",
+        "duration": 500,
+        "tags": [
+            "ocean",
+            "nature",
+            "discovery"
+        ],
+        "actors": [],
+        "isAdult": false
+    },
+    {
+        "title": "Cooking Masterclass: Pasta",
+        "embedUrl": "https://www.youtube.com/embed/abc123yz",
+        "thumbnailUrl": "https://example.com/pasta.jpg",
+        "genreName": "Food",
+        "duration": 340,
+        "tags": [
+            "cooking",
+            "recipe",
+            "pasta"
+        ],
+        "actors": [
+            "Chef Mario"
+        ],
+        "isAdult": false
+    }
+]

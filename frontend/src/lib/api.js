@@ -36,6 +36,8 @@ export const api = {
     },
     updateVideo: (id, data) => apiFetch(`/api/admin/videos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteVideo: (id) => apiFetch(`/api/admin/videos/${id}`, { method: 'DELETE' }),
+    embedVideo: (data) => apiFetch('/api/admin/videos/embed', { method: 'POST', body: JSON.stringify(data) }),
+    bulkEmbedVideos: (rows) => apiFetch('/api/admin/videos/bulk-embed', { method: 'POST', body: JSON.stringify(rows) }),
 
     adminGenres: () => apiFetch('/api/admin/genres'),
     adminTags: () => apiFetch('/api/admin/tags'),

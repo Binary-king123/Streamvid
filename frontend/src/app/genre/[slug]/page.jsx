@@ -1,39 +1,29 @@
-'use client'
-import { useParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import VideoCard from '@/components/VideoCard'
-import { api } from '@/lib/api'
+import GenrePageClient from './GenrePageClient'
 
-export default function GenrePage() {
-    const { slug } = useParams()
-    const [data, setData] = useState(null)
-    const [page, setPage] = useState(1)
-    const [loading, setLoading] = useState(true)
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || 'https://yourdomain.com'
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'StreamVid'
 
-    useEffect(() => {
-        setLoading(true)
-        api.genre(slug, page).then(d => { setData(d); setLoading(false) })
-    }, [slug, page])
+export async function generateMetadata({ params }) {
+    const { slug } = await params
+    try {
+        const data = await fetch(`${API}/api/videos/genre/${slug}?page=1`, { next: { revalidate: 3600 } }).then(r => r.json())
+        const genre = data?.genre
+        if (!genre) return {}
+        const title = `${genre.name} Videos — Free ${genre.name} Porn | ${SITE_NAME}`
+        const description = `Watch the best ${genre.name} videos online. Browse ${data.total || 0}+ free ${genre.name} sex videos. Updated daily on ${SITE_NAME}.`
+        return {
+            title,
+            description,
+            keywords: `${genre.name}, ${genre.name} videos, free ${genre.name} porn`,
+            openGraph: { title, description, siteName: SITE_NAME, type: 'website' },
+            twitter: { card: 'summary', title, description },
+            alternates: { canonical: `${DOMAIN}/genre/${slug}` },
+        }
+    } catch { return {} }
+}
 
-    return (
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 16px' }}>
-            <div id="top-banner-ad" className="ad-banner" style={{ marginBottom: 24 }} />
-
-            <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>
-                {data?.genre?.name || 'Loading...'}
-            </h1>
-
-            <div className="video-grid">
-                {data?.videos?.map(v => <VideoCard key={v.id} video={v} />)}
-            </div>
-
-            {data?.totalPages > 1 && (
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 32 }}>
-                    <button className="btn-secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
-                    <span style={{ color: 'var(--text-muted)', lineHeight: '36px', fontSize: 13 }}>Page {page} of {data.totalPages}</span>
-                    <button className="btn-secondary" disabled={page === data.totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
-                </div>
-            )}
-        </div>
-    )
+export default async function GenrePage({ params }) {
+    const { slug } = await params
+    return <GenrePageClient slug={slug} />
 }

@@ -56,6 +56,7 @@ model Video {
   durationSeconds Int      @default(0) @map("duration_seconds")
   status          String   @default("processing") // processing | ready | failed
   isAdult         Boolean  @default(false) @map("is_adult")
+  embedUrl        String?  @map("embed_url")
   hlsPath         String?  @map("hls_path")
   thumbnailPath   String?  @map("thumbnail_path")
   previewPath     String?  @map("preview_path")

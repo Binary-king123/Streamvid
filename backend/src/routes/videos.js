@@ -24,6 +24,7 @@ function slimVideo(v) {
         viewsCount: v.viewsCount,
         createdAt: v.createdAt,
         isAdult: v.isAdult,
+        embedUrl: v.embedUrl,
         genre: v.genre ? { name: v.genre.name, slug: v.genre.slug } : null,
         tags: v.tags?.map(vt => ({ id: vt.tag.id, name: vt.tag.name, slug: vt.tag.slug })) || [],
         actors: v.actors?.map(va => ({ id: va.actor.id, name: va.actor.name, slug: va.actor.slug })) || []
