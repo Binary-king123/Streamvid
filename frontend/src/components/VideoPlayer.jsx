@@ -2,144 +2,179 @@
 import { useEffect, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import { videoUrl } from '@/lib/api'
-import { trackVideoView, getTracker } from '@/lib/tracker'
+import { trackVideoView } from '@/lib/tracker'
+
+// Detect video type from URL
+function getVideoType(url) {
+    if (!url) return null
+    const u = url.toLowerCase()
+    if (u.includes('.m3u8')) return 'hls'
+    if (u.match(/\.(mp4|webm|ogg|mov|mkv|avi)(\?|$)/)) return 'mp4'
+    return 'iframe'
+}
 
 export default function VideoPlayer({ video }) {
     const videoRef = useRef(null)
+    const hlsRef = useRef(null)
     const [viewRecorded, setViewRecorded] = useState(false)
+    const [playing, setPlaying] = useState(false)
     const watchTime = useRef(0)
     const interval = useRef(null)
 
-    // Initialize human tracker immediately when player mounts
-    useEffect(() => { getTracker() }, [])
+    // Determine which mode to render
+    const mode = video?.embedUrl
+        ? (getVideoType(video.embedUrl) === 'mp4' ? 'mp4' : 'iframe')
+        : video?.hlsPath
+            ? 'hls'
+            : null
+
+    const thumbSrc = videoUrl(video?.thumbnailPath) || ''
+
+    // Count view after 5s of interaction
+    function recordView() {
+        if (viewRecorded) return
+        setViewRecorded(true)
+        trackVideoView(video.id, 5)
+    }
 
     // HLS setup
     useEffect(() => {
-        if (!video?.hlsPath) return
+        if (mode !== 'hls') return
         const el = videoRef.current
+        if (!el) return
         const src = videoUrl(video.hlsPath)
 
         if (Hls.isSupported()) {
-            const hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: false,
-                maxBufferLength: 30,         // Buffer 30s ahead
-                maxMaxBufferLength: 60,
-                startLevel: -1,              // Auto quality
-            })
+            const hls = new Hls({ enableWorker: true, maxBufferLength: 30, startLevel: -1 })
+            hlsRef.current = hls
             hls.loadSource(src)
             hls.attachMedia(el)
-
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                // Browsers block unmuted autoplay, capture the promise to prevent console errors
-                const playPromise = el.play()
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        console.log('Autoplay prevented by browser, waiting for user interaction.')
-                    })
-                }
+                el.play().catch(() => { })
             })
-
-            return () => hls.destroy()
         } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
             el.src = src
         }
-    }, [video?.hlsPath])
 
-    // Real-user view tracking — uses HumanTracker, not raw API call
+        return () => { hlsRef.current?.destroy(); hlsRef.current = null }
+    }, [video?.hlsPath, mode])
+
+    // Track watch time for HLS/MP4
     useEffect(() => {
+        if (mode === 'iframe') return
         const el = videoRef.current
         if (!el || !video?.id) return
         watchTime.current = 0
 
         function onPlay() {
+            setPlaying(true)
             interval.current = setInterval(() => {
                 watchTime.current++
-                // Count view after 5 continuous seconds of real playback
-                if (watchTime.current >= 5 && !viewRecorded) {
-                    setViewRecorded(true)
-                    clearInterval(interval.current)
-                    // Uses HumanTracker — includes human token + watch time
-                    trackVideoView(video.id, watchTime.current)
-                }
+                if (watchTime.current >= 5) recordView()
             }, 1000)
         }
-
-        function onPause() { clearInterval(interval.current) }
-        function onEnded() { clearInterval(interval.current) }
+        function onPause() { setPlaying(false); clearInterval(interval.current) }
+        function onEnded() { setPlaying(false); clearInterval(interval.current) }
 
         el.addEventListener('play', onPlay)
         el.addEventListener('pause', onPause)
         el.addEventListener('ended', onEnded)
-
         return () => {
             el.removeEventListener('play', onPlay)
             el.removeEventListener('pause', onPause)
             el.removeEventListener('ended', onEnded)
             clearInterval(interval.current)
         }
-    }, [video?.id, viewRecorded])
+    }, [video?.id, mode])
+
+    if (!mode) {
+        return (
+            <div style={{ width: '100%', aspectRatio: '16/9', background: '#111', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 14 }}>
+                No video available
+            </div>
+        )
+    }
 
     return (
-        <div style={{
-            width: '100%', background: '#000',
-            borderRadius: 10, overflow: 'hidden', position: 'relative'
-        }}>
-            {/* ─── Pre-roll Ad Slot ───────────────────────────── */}
-            {/* Ad network JS injects into this div BEFORE video plays */}
-            <div id="preroll-ad-container" style={{ width: '100%' }} />
+        <div style={{ width: '100%', background: '#000', borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
+            {/* ── Iframe embed (YouTube, external player, etc.) ──────── */}
+            {mode === 'iframe' && !playing && (
+                /* Click-to-play poster for iframe — avoids CSP issues and enables clean first-click */
+                <div
+                    onClick={() => { setPlaying(true); recordView() }}
+                    style={{ position: 'relative', width: '100%', paddingTop: '56.25%', cursor: 'pointer', background: '#000' }}
+                >
+                    {thumbSrc && (
+                        <img
+                            src={thumbSrc}
+                            alt={video.title}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }}
+                        />
+                    )}
+                    {/* Big play button */}
+                    <div style={{
+                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <div style={{
+                            width: 72, height: 72, borderRadius: '50%',
+                            background: 'rgba(124,58,237,0.9)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 28, boxShadow: '0 0 30px rgba(124,58,237,0.5)',
+                            transition: 'transform 0.2s',
+                        }}>▶</div>
+                    </div>
+                    {/* Duration badge */}
+                    {video.durationSeconds > 0 && (
+                        <div style={{
+                            position: 'absolute', bottom: 10, right: 10,
+                            background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: 11,
+                            padding: '2px 7px', borderRadius: 4
+                        }}>
+                            {Math.floor(video.durationSeconds / 60)}:{String(video.durationSeconds % 60).padStart(2, '0')}
+                        </div>
+                    )}
+                </div>
+            )}
 
-            {/* ─── Video Player (Iframe OR HLS) ───────────────────────────── */}
-            {video?.embedUrl ? (
-                // OPTION 1: Third-Party Iframe Embed (zero hosting cost)
+            {mode === 'iframe' && playing && (
                 <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
                     <iframe
                         src={video.embedUrl}
                         frameBorder="0"
                         allowFullScreen
+                        allow="autoplay; fullscreen; picture-in-picture"
                         scrolling="no"
-                        loading="lazy"
-                        style={{
-                            position: 'absolute', top: 0, left: 0,
-                            width: '100%', height: '100%'
-                        }}
-                    ></iframe>
-                    {/* Invisible overlay to capture the first click for Pop-unders while letting subsequent clicks pass to iframe */}
-                    {!viewRecorded && (
-                        <div
-                            style={{ position: 'absolute', inset: 0, zIndex: 10, cursor: 'pointer' }}
-                            onClick={() => {
-                                // Record view on first interaction
-                                trackVideoView(video.id, 5);
-                                setViewRecorded(true);
-                                // The first click gets captured here. 
-                                // In production, ExoClick/TrafficJunky script handles the pop-under on ANY body click.
-                            }}
-                        />
-                    )}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                    />
                 </div>
-            ) : (
-                // OPTION 2: Self-hosted HLS Stream
+            )}
+
+            {/* ── Direct MP4 / WebM / all native video formats ──────── */}
+            {mode === 'mp4' && (
                 <video
                     ref={videoRef}
                     controls
-                    playsInline
                     autoPlay
-                    style={{ width: '100%', display: 'block', aspectRatio: '16/9' }}
-                    poster={videoUrl(video?.thumbnailPath)}
+                    playsInline
+                    poster={thumbSrc}
+                    style={{ width: '100%', display: 'block', aspectRatio: '16/9', background: '#000' }}
                     crossOrigin="anonymous"
-                />
+                >
+                    <source src={video.embedUrl} />
+                    Your browser does not support video playback.
+                </video>
             )}
 
-            {/* ─── View Badge (debug — remove in prod if desired) ─ */}
-            {viewRecorded && (
-                <div style={{
-                    position: 'absolute', bottom: 8, right: 8,
-                    background: 'rgba(0,0,0,0.5)', color: '#10b981',
-                    fontSize: 10, padding: '2px 6px', borderRadius: 4, pointerEvents: 'none'
-                }}>
-                    ✓ Viewed
-                </div>
+            {/* ── HLS (.m3u8) stream ─────────────────────────────────── */}
+            {mode === 'hls' && (
+                <video
+                    ref={videoRef}
+                    controls
+                    autoPlay
+                    playsInline
+                    poster={thumbSrc}
+                    style={{ width: '100%', display: 'block', aspectRatio: '16/9', background: '#000' }}
+                />
             )}
         </div>
     )
