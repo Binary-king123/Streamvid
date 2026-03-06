@@ -71,7 +71,8 @@ echo -e "  ${GREEN}✓ Done${NC}"
 # ─── 2. Node.js 20 ─────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}[2/9] Node.js 20...${NC}"
 if ! command -v node &>/dev/null || [[ "$(node -v)" != v20* ]]; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - -q
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+
   sudo apt install -y -q nodejs
 fi
 echo -e "  ${GREEN}✓ Node $(node -v) | npm $(npm -v)${NC}"
