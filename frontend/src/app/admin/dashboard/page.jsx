@@ -79,7 +79,7 @@ function TabVideos({ genres }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {videos.map(v => (
+                        {videos?.map(v => (
                             <tr key={v.id} style={{ borderBottom: '1px solid var(--border)' }}>
                                 <td style={{ padding: '8px 10px' }}>
                                     <div style={{ width: 60, borderRadius: 4, overflow: 'hidden', aspectRatio: '16/9', background: '#111' }}>
@@ -160,7 +160,7 @@ function TabFileUpload({ genres }) {
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>GENRE *</label>
                     <select style={inputStyle} value={form.genreId} onChange={e => setForm(f => ({ ...f, genreId: e.target.value }))} required>
                         <option value="">Select genre</option>
-                        {genres.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        {genres?.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                     </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
@@ -247,7 +247,7 @@ function TabUrlImport({ genres }) {
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>GENRE *</label>
                     <select style={inputStyle} value={form.genreId} onChange={e => setForm(f => ({ ...f, genreId: e.target.value }))} required>
                         <option value="">Select</option>
-                        {genres.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        {genres?.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                     </select>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 4 }}>
@@ -364,7 +364,7 @@ function TabTaxonomy({ genres, reload }) {
                     <button type="submit" className="btn-primary" style={{ padding: '7px 14px', fontSize: 12 }}>Add</button>
                 </form>
                 <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                    {genres.map(g => (
+                    {genres?.map(g => (
                         <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
                             <span>{g.name} {g.isAdult && '🔞'}</span>
                             <span style={{ color: 'var(--text-muted)' }}>/{g.slug}</span>
@@ -378,7 +378,7 @@ function TabTaxonomy({ genres, reload }) {
                 <h3 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700 }}>Tags ({tags.length})</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>Tags are auto-created when you upload videos. They appear here automatically.</p>
                 <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {tags.map(t => (
+                    {tags?.map(t => (
                         <span key={t.id} style={{ fontSize: 11, background: 'rgba(124,58,237,0.15)', color: 'var(--accent)', padding: '3px 8px', borderRadius: 4 }}>
                             {t.name}
                         </span>
@@ -386,7 +386,7 @@ function TabTaxonomy({ genres, reload }) {
                 </div>
                 <h3 style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 700 }}>Actors/Models ({actors.length})</h3>
                 <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {actors.map(a => (
+                    {actors?.map(a => (
                         <span key={a.id} style={{ fontSize: 11, background: 'rgba(16,185,129,0.1)', color: 'var(--success)', padding: '3px 8px', borderRadius: 4 }}>
                             {a.name}
                         </span>
