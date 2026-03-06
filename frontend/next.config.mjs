@@ -10,6 +10,9 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
   },
 
+  // ─── Turbopack (Next.js 16 default) ──────────────────────────────────────
+  turbopack: {},
+
   // ─── Experimental Speed Features ─────────────────────────────────────────
   experimental: {
     optimizePackageImports: ['hls.js'],
@@ -71,28 +74,6 @@ const nextConfig = {
         headers: [{ key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' }],
       },
     ]
-  },
-
-
-
-  // ─── Webpack tweaks ───────────────────────────────────────────────────────
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      // Split hls.js into its own chunk — only loads on watch page
-      config.optimization.splitChunks = {
-        ...config.optimization.splitChunks,
-        cacheGroups: {
-          ...config.optimization.splitChunks?.cacheGroups,
-          hls: {
-            test: /[\\/]node_modules[\\/]hls\.js/,
-            name: 'hls',
-            chunks: 'all',
-            priority: 30,
-          },
-        },
-      }
-    }
-    return config
   },
 }
 
