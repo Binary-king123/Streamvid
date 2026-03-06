@@ -41,7 +41,13 @@ await server.register(cors, {
   credentials: true
 })
 await server.register(cookie)
-await server.register(jwt, { secret: process.env.JWT_SECRET || 'fallback-dev-secret' })
+await server.register(jwt, {
+  secret: process.env.JWT_SECRET || 'fallback-dev-secret',
+  cookie: {
+    cookieName: 'token',
+    signed: false
+  }
+})
 await server.register(multipart, { limits: { fileSize: 2 * 1024 * 1024 * 1024, files: 1 } })
 await server.register(rateLimit, {
   max: 100,
