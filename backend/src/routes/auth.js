@@ -29,7 +29,7 @@ export async function authRoutes(fastify) {
         )
 
         reply
-            .setCookie('token', token, { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax' })
+            .setCookie('token', token, { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: false })
             .send({ token, user: { id: user.id, email: user.email } })
     })
 
