@@ -12,7 +12,6 @@ const nextConfig = {
 
   // ─── Experimental Speed Features ─────────────────────────────────────────
   experimental: {
-    optimizeCss: true,           // Critters CSS inlining — removes render-blocking CSS
     optimizePackageImports: ['hls.js'],
   },
 
@@ -40,36 +39,41 @@ const nextConfig = {
         ],
       },
 
-      // Public assets (manifest, icons)
+      // Public assets — match common static file extensions
       {
-        source: '/(:path*.(ico|png|svg|json|xml|webp|avif))',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
-        ],
+        source: '/:path*.ico',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
+      },
+      {
+        source: '/:path*.png',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
+      },
+      {
+        source: '/:path*.svg',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
       },
 
       // ISR pages — serve from cache, revalidate in background
       {
-        source: '/(watch|genre|tag|actor)/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' },
-        ],
+        source: '/watch/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/genre/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/tag/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' }],
+      },
+      {
+        source: '/actor/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=86400' }],
       },
     ]
   },
 
-  // ─── Rewrites — Mirror domain support ────────────────────────────────────
-  // If user hits /mirror they get the same site (no 404)
-  async rewrites() {
-    return []
-  },
 
-  // ─── Redirects — www to non-www (canonical) ──────────────────────────────
-  async redirects() {
-    return [
-      // No redirects needed — Nginx handles www → non-www
-    ]
-  },
 
   // ─── Webpack tweaks ───────────────────────────────────────────────────────
   webpack(config, { isServer }) {
