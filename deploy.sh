@@ -79,7 +79,7 @@ echo -e "  ${GREEN}✓ Node $(node -v) | npm $(npm -v)${NC}"
 
 # ─── 3. PM2 ────────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}[3/9] PM2...${NC}"
-sudo npm install -g pm2 -q
+sudo npm install -g pm2 --silent
 echo -e "  ${GREEN}✓ PM2 $(pm2 -v)${NC}"
 
 # ─── 4. PostgreSQL ─────────────────────────────────────────────────────────────
@@ -129,14 +129,14 @@ echo -e "\n${BOLD}[7/9] Installing & building app...${NC}"
 
 echo "  → Backend..."
 cd backend
-npm ci -q
-npx prisma generate -q
+npm ci --silent
+npx prisma generate
 npx prisma migrate deploy
 cd ..
 
 echo "  → Frontend..."
 cd frontend
-npm ci -q
+npm ci --silent
 npm run build
 # Standalone output requires static dir copy
 cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
